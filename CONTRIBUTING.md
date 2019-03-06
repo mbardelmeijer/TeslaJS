@@ -20,3 +20,14 @@ Useful bug reports include the following:
 * Version of the library used (ideally the latest published version)
 * Clear set of steps used to reproduct the issue
 * Code examples if appropriate
+
+## Testing
+A apiary mock can be used, for instance:
+
+```
+export TESLAJS_SERVER=http://private-111a5-teslajs.apiary-mock.com
+export TESLAJS_STREAMING=http://private-111a5-teslajs.apiary-mock.com
+```
+
+## Running Mocha
+`./node_modules/.bin/istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec`

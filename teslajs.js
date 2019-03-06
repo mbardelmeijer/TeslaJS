@@ -1,34 +1,38 @@
 /**
  * @file This is a Node.js module encapsulating the unofficial Tesla API set
- * 
+ *
  * Github: https://github.com/mseminatore/TeslaJS
  * NPM: https://www.npmjs.com/package/teslajs
- * 
+ *
  * @copyright Copyright (c) 2016 Mark Seminatore
- * 
+ *
  * @license MIT
- * 
+ *
  * Refer to included LICENSE file for usage rights and restrictions
  */
 
 "use strict";
 
-var request = require('request').defaults({
-    headers: {
-        "x-tesla-user-agent": "TeslaApp/3.4.4-350/fad4a582e/android/8.1.0",
-        "user-agent": "Mozilla/5.0 (Linux; Android 8.1.0; Pixel XL Build/OPM4.171019.021.D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/68.0.3440.91 Mobile Safari/537.36"
-    },
-    json: true,
-    gzip: true,
-    body: {}
-});
+// var request = require('request').defaults({
+//     headers: {
+//         "x-tesla-user-agent": "TeslaApp/3.4.4-350/fad4a582e/android/8.1.0",
+//         "user-agent": "Mozilla/5.0 (Linux; Android 8.1.0; Pixel XL Build/OPM4.171019.021.D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/68.0.3440.91 Mobile Safari/537.36"
+//     },
+//     json: true,
+//     gzip: true,
+//     body: {}
+// });
+var axios = require('axios');
+axios.defaults.headers.common['x-tesla-user-agent'] = 'TeslaApp/3.4.4-350/fad4a582e/android/8.1.0';
+axios.defaults.headers.common['user-agent'] = 'Mozilla/5.0 (Linux; Android 8.1.0; Pixel XL Build/OPM4.171019.021.D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/68.0.3440.91 Mobile Safari/537.36';
+
 var Promise = require('promise');
 
 //=======================
 // Streaming API portal
 //=======================
-/** 
- * @global 
+/**
+ * @global
  * @default
  */
 var streamingPortal = "https://streaming.vn.teslamotors.com/stream";
@@ -39,9 +43,9 @@ var streamingBaseURI = process.env.TESLAJS_STREAMING || streamingPortal;
 //===========================
 // New OAuth-based API portal
 //===========================
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var portal = "https://owner-api.teslamotors.com";
 exports.portal = portal;
@@ -51,58 +55,58 @@ var portalBaseURI = process.env.TESLAJS_SERVER || portal;
 //=======================
 // Log levels
 //=======================
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_LOG_ALWAYS = 0;
 exports.API_LOG_ALWAYS = API_LOG_ALWAYS;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_ERR_LEVEL = 1;
 exports.API_ERR_LEVEL = API_ERR_LEVEL;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_CALL_LEVEL = 2;
 exports.API_CALL_LEVEL = API_CALL_LEVEL;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_RETURN_LEVEL = 3;
 exports.API_RETURN_LEVEL = API_RETURN_LEVEL;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_BODY_LEVEL = 4;
 exports.API_BODY_LEVEL = API_BODY_LEVEL;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_REQUEST_LEVEL = 5;
 exports.API_REQUEST_LEVEL = API_REQUEST_LEVEL;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_RESPONSE_LEVEL = 6;
 exports.API_RESPONSE_LEVEL = API_RESPONSE_LEVEL;
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 var API_LOG_ALL = 255;	// this value must be the last
 exports.API_LOG_ALL = API_LOG_ALL;
@@ -292,38 +296,30 @@ exports.getShortVin = function getShortVin(vehicle) {
  */
 exports.login = function login(username, password, callback) {
     log(API_CALL_LEVEL, "TeslaJS.login()");
-    
+
     callback = callback || function (err, result) { /* do nothing! */ }
 
     if (!username || !password) {
         callback("login() requires username and password", null);
         return;
-    } 
+    }
 
-    var req = {
-        method: 'POST',
-        url: portalBaseURI + '/oauth/token',
-        body: {
-            "grant_type": "password",
-            "client_id": c_id,
-            "client_secret": c_sec,
-            "email": process.env.TESLAJS_USER || username,
-            "password": process.env.TESLAJS_PASS || password
-        }
-    };
-
-    log(API_REQUEST_LEVEL, "\nRequest: " + JSON.stringify(req));
-
-    request(req, function (error, response, body) {
-
-        log(API_RESPONSE_LEVEL, "\nResponse: " + JSON.stringify(response));
-        log(API_RESPONSE_LEVEL, "\nBody: " + JSON.stringify(body));
-
-        var loginResult = body;
-
-        callback(error, { error: error, response: response, body: body, authToken: loginResult.access_token, refreshToken: loginResult.refresh_token });
-
-        log(API_RETURN_LEVEL, "TeslaJS.login() completed.");
+    axios.post(portalBaseURI + '/oauth/token', {
+        "grant_type": "password",
+        "client_id": c_id,
+        "client_secret": c_sec,
+        "email": process.env.TESLAJS_USER || username,
+        "password": process.env.TESLAJS_PASS || password
+    }).then(function (response) {
+        callback(null, {
+            error: null,
+            response: response,
+            body: response.data,
+            authToken: response.data.access_token,
+            refreshToken: response.data.refresh_token
+        });
+    }).catch(function (error) {
+        callback(error, {error: error, response: error.response});
     });
 }
 
@@ -344,34 +340,23 @@ exports.loginAsync = Promise.denodeify(exports.login);
  */
 exports.refreshToken = function refreshToken(refresh_token, callback) {
     log(API_CALL_LEVEL, "TeslaJS.refreshToken()");
-    
+
     callback = callback || function (err, result) { /* do nothing! */ }
 
     if (!refresh_token) {
         callback("refreshToken() requires a refresh_token", null);
         return;
-    } 
+    }
 
-    var req = {
-        method: 'POST',
-        url: portalBaseURI + '/oauth/token',
-        body: {
-            "grant_type": "refresh_token",
-            "client_id": c_id,
-            "client_secret": c_sec,
-            "refresh_token": refresh_token
-        }
-    };
-
-    log(API_REQUEST_LEVEL, "\nRequest: " + JSON.stringify(req));
-
-    request(req, function (error, response, body) {
-
-        log(API_RESPONSE_LEVEL, "\nResponse: " + body);
-
-        callback(error, { error: error, response: response, body: JSON.stringify(body), authToken: body.access_token, refreshToken: body.refresh_token });
-
-        log(API_RETURN_LEVEL, "TeslaJS.refreshToken() completed.");
+    axios.post(portalBaseURI + '/oauth/token', {
+        "grant_type": "refresh_token",
+        "client_id": c_id,
+        "client_secret": c_sec,
+        "refresh_token": refresh_token
+    }).then(function (response) {
+        callback(null, { error: null, response: response, body: JSON.stringify(response.data), authToken: response.data.access_token, refreshToken: response.data.refresh_token });
+    }).catch(function (error) {
+        callback(error, {error: error, response: error.response});
     });
 }
 
@@ -393,15 +378,15 @@ exports.logout = function logout(authToken, callback) {
 
     callback = callback || function (err, result) { /* do nothing! */ }
 
-    request({
-        method: 'POST',
-        url: portalBaseURI + '/oauth/revoke',
-        headers: { Authorization: "Bearer " + authToken, 'Content-Type': 'application/json; charset=utf-8' }
-    }, function (error, response, body) {
-
-        callback(error, { error: error, response: response, body: JSON.stringify(body) });
-
-        log(API_RETURN_LEVEL, "TeslaJS.logout() completed.");
+    axios.post(portalBaseURI + '/oauth/revoke', {}, {
+        headers: {
+            Authorization: "Bearer " + authToken,
+            'Content-Type': 'application/json; charset=utf-8'
+        }
+    }).then(function (response) {
+        callback(null, { error: null, response: response, body: JSON.stringify(response.data) });
+    }).catch(function (error) {
+        callback(error, {error: error, response: error.response});
     });
 }
 
@@ -425,39 +410,24 @@ exports.vehicle = function vehicle(options, callback) {
 
     callback = callback || function (err, vehicle) { /* do nothing! */ }
 
-    var req = {
-        method: 'GET',
-        url: portalBaseURI + '/api/1/vehicles',
-        headers: { Authorization: "Bearer " + options.authToken, 'Content-Type': 'application/json; charset=utf-8' }
-    };
-
-    log(API_REQUEST_LEVEL, "\nRequest: " + JSON.stringify(req));
-
-    request(req, function (error, response, body) {
-        if (error) {
-            log(API_ERR_LEVEL, error);
-            return callback(error, null);
+    axios.get(portalBaseURI + '/api/1/vehicles', {}, {
+        headers: {
+            Authorization: "Bearer " + options.authToken,
+            'Content-Type': 'application/json; charset=utf-8'
         }
-
-        if (response.statusCode != 200) {
-            return callback(response.statusMessage, null);
-        }
-
-        log(API_BODY_LEVEL, "\nBody: " + JSON.stringify(body));
-        log(API_RESPONSE_LEVEL, "\nResponse: " + JSON.stringify(response));
-
+    }).then(function (response) {
         try {
-            body = body.response[options.carIndex || 0];
+            var body = response.data.response[options.carIndex || 0];
             body.id = body.id_s;
             options.vehicleID = body.id;
-            
+
             callback(null, body);
         } catch (e) {
             log(API_ERR_LEVEL, 'Error parsing vehicles response');
             callback(e, null);
         }
-
-        log(API_RETURN_LEVEL, "\nGET request: " + "/vehicles" + " completed.");
+    }).catch(function (error) {
+        callback(error.response ? error.response.status : error, null);
     });
 }
 
@@ -481,37 +451,15 @@ exports.vehicles = function vehicles(options, callback) {
 
     callback = callback || function (err, vehicle) { /* do nothing! */ }
 
-    var req = {
-        method: 'GET',
-        url: portalBaseURI + '/api/1/vehicles',
-        headers: { Authorization: "Bearer " + options.authToken, 'Content-Type': 'application/json; charset=utf-8' }
-    };
-
-    log(API_REQUEST_LEVEL, "\nRequest: " + JSON.stringify(req));
-
-    request(req, function (error, response, body) {
-        if (error) {
-            log(API_ERR_LEVEL, error);
-            return callback(error, null);
+    axios.get(portalBaseURI + '/api/1/vehicles', {}, {
+        headers: {
+            Authorization: "Bearer " + options.authToken,
+            'Content-Type': 'application/json; charset=utf-8'
         }
-
-        if (response.statusCode != 200) {
-            return callback(response.statusMessage, null);
-        }
-
-        log(API_BODY_LEVEL, "\nBody: " + JSON.stringify(body));
-        log(API_RESPONSE_LEVEL, "\nResponse: " + JSON.stringify(response));
-
-        try {
-            body = body.response;
-            
-            callback(null, body);
-        } catch (e) {
-            log(API_ERR_LEVEL, 'Error parsing vehicles response');
-            callback(e, null);
-        }
-
-        log(API_RETURN_LEVEL, "\nGET request: " + "/vehicles" + " completed.");
+    }).then(function (response) {
+        callback(null, JSON.parse(JSON.stringify(response.data.response)));
+    }).catch(function (error) {
+        callback(error.response ? error.response.status : error, null);
     });
 }
 
@@ -537,39 +485,17 @@ function get_command(options, command, callback) {
 
     callback = callback || function (err, data) { /* do nothing! */ }
 
-    var req = {
-        method: "GET",
-        url: portalBaseURI + "/api/1/vehicles/" + options.vehicleID + "/" + command,
-        headers: { Authorization: "Bearer " + options.authToken, 'Content-Type': 'application/json; charset=utf-8'}
-    };
-
-    log(API_REQUEST_LEVEL, "\nRequest: " + JSON.stringify(req));
-
-    request(req, function (error, response, body) {
-        if (error) {
-            log(API_ERR_LEVEL, error);
-            return callback(error, null);
+    axios.get(portalBaseURI + '/api/1/vehicles/' + options.vehicleID + "/" + command, {}, {
+        headers: {
+            Authorization: "Bearer " + options.authToken,
+            'Content-Type': 'application/json; charset=utf-8'
         }
+    }).then(function (response) {
+        var body = response.data.response;
 
-        if (response.statusCode != 200) {
-            var str = "Error response: " + response.statusCode;
-            log(API_ERR_LEVEL, str);
-            return callback(str, null);
-        }
-
-        log(API_BODY_LEVEL, "\nBody: " + JSON.stringify(body));
-        log(API_RESPONSE_LEVEL, "\nResponse: " + JSON.stringify(response));
-
-        try {
-            body = body.response;
-
-            callback(null, body);
-        } catch (e) {
-            log(API_ERR_LEVEL, 'Error parsing GET call response');
-            callback(e, null);
-        }
-
-        log(API_RETURN_LEVEL, "\nGET request: " + command + " completed.");
+        callback(null, body);
+    }).catch(function (error) {
+        callback("Error response: " + (error.response ? error.response.status : error), null);
     });
 }
 
@@ -596,40 +522,17 @@ function post_command(options, command, body, callback) {
 
     callback = callback || function (err, data) { /* do nothing! */ }
 
-    var cmd = {
-        method: "POST",
-        url: portalBaseURI + "/api/1/vehicles/" + options.vehicleID + "/" + command,
-        headers: { Authorization: "Bearer " + options.authToken, 'content-type': 'application/json; charset=UTF-8' },
-        body: body || null
-    };
-
-    log(API_REQUEST_LEVEL, "\nRequest: " + JSON.stringify(cmd));
-
-    request(cmd, function (error, response, body) {
-        if (error) {
-            log(API_ERR_LEVEL, error);
-            return callback(error, null);
+    axios.post(portalBaseURI + '/api/1/vehicles/' + options.vehicleID + "/" + command, body, {
+        headers: {
+            Authorization: "Bearer " + options.authToken,
+            'Content-Type': 'application/json; charset=utf-8'
         }
+    }).then(function (response) {
+        var body = response.data.response;
 
-        if (response.statusCode != 200) {
-            var str = "Error response: " + response.statusCode;
-            log(API_ERR_LEVEL, str);
-            return callback(str, null);
-        }
-
-        log(API_BODY_LEVEL, "\nBody: " + JSON.stringify(body));
-        log(API_RESPONSE_LEVEL, "\nResponse: " + JSON.stringify(response));
-
-        try {
-            body = body.response;
-
-            callback(null, body);
-        } catch (e) {
-            log(API_ERR_LEVEL, 'Error parsing POST call response');
-            callback(e, null);
-        }
-
-        log(API_RETURN_LEVEL, "\nPOST command: " + command + " completed.");
+        callback(null, body);
+    }).catch(function (error) {
+        callback("Error response: " + (error.response ? error.response.status : error), null);
     });
 }
 
@@ -881,7 +784,7 @@ exports.openChargePort = function openChargePort(options, callback) {
 }
 
 /**
- * Open the charge port, or releases the latch if the charge port is open, a cable is plugged in, and charging is stopped 
+ * Open the charge port, or releases the latch if the charge port is open, a cable is plugged in, and charging is stopped
  * @function openChargePortAsync
  * @param {optionsType} options - options object
  * @returns {Promise} result
@@ -926,7 +829,7 @@ exports.scheduleSoftwareUpdate = function scheduleSoftwareUpdate(options, offset
 */
 exports.scheduleSoftwareUpdateAsync = Promise.denodeify(exports.scheduleSoftwareUpdate);
 
-/** 
+/**
  * Cancel a scheduled software update
  * @function cancelSoftwareUpdate
  * @param {optionsType} options - options object
@@ -936,7 +839,7 @@ exports.cancelSoftwareUpdate = function cancelSoftwareUpdate(options, callback) 
     post_command(options, "command/cancel_software_update", null, callback);
 }
 
-/** 
+/**
  * Cancel a scheduled software update
  * @function cancelSoftwareUpdateAsync
  * @param {optionsType} options - options object
@@ -1251,24 +1154,24 @@ exports.steeringHeaterAsync = Promise.denodeify(exports.steeringHeater);
 //=====================
 // Charge limit constants
 //=====================
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.CHARGE_STORAGE  = 50;
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.CHARGE_DAILY    = 70;
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.CHARGE_STANDARD = 90;
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.CHARGE_RANGE    = 100;
 
@@ -1400,14 +1303,14 @@ exports.climateStopAsync = Promise.denodeify(exports.climateStop);
 //==================================
 // Set the sun roof to specific mode
 //==================================
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.SUNROOF_VENT = "vent";
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.SUNROOF_CLOSED = "close";
 
@@ -1453,14 +1356,14 @@ exports.sunRoofMoveAsync = Promise.denodeify(exports.sunRoofMove);
 // Temperature Limits
 //==============================================
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.MIN_TEMP = 15;    // 59 Deg.F
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.MAX_TEMP = 28;    // 82.4 Deg.F
 
@@ -1516,14 +1419,14 @@ exports.remoteStartAsync = Promise.denodeify(exports.remoteStart);
 // Trunk/Frunk constants
 //=====================
 
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.FRUNK = "front";
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.TRUNK = "rear";
 
@@ -1734,9 +1637,9 @@ exports.autoPark = function autoPark(options, lat, long, action, callback) {
 //=================================
 // Available streaming data options
 //=================================
-/**   
- * @global   
- * @default  
+/**
+ * @global
+ * @default
  */
 exports.streamingColumns = ['elevation', 'est_heading', 'est_lat', 'est_lng', 'est_range', 'heading', 'odometer', 'power', 'range', 'shift_state', 'speed', 'soc'];
 

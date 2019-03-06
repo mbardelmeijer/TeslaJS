@@ -176,7 +176,7 @@ describe('TeslaJS', function () {
 	describe('#login()', function() {
 	    it('should succeed with valid user and pwd', function (done) {
 			tjs.login(user, pass, function(err, result) {
-				if (result.response.statusCode == 200) {
+				if (result.response.status == 200) {
 				    options.authToken = result.authToken;
                     done();
 				} else {
@@ -204,7 +204,7 @@ describe('TeslaJS', function () {
 	describe('#loginAsync()', function () {
 	    it('should succeed with valid user and pwd', function () {
 	        return tjs.loginAsync(user, pass).then(function (result) {
-	            assert.equal(result.response.statusCode, 200);
+	            assert.equal(result.response.status, 200);
 	        });
 	    });
 	});
@@ -212,7 +212,7 @@ describe('TeslaJS', function () {
 	describe('#refreshToken()', function() {
 	    it('should succeed with valid refresh token', function (done) {
 			tjs.refreshToken("faketoken", function(err, result) {
-				if (result.response.statusCode == 200) {
+				if (result.response.status == 200) {
 				    options.authToken = result.authToken;
                     done();
 				} else {
@@ -240,7 +240,7 @@ describe('TeslaJS', function () {
 	describe('#refreshTokenAsync()', function () {
 	    it('should succeed with valid user and pwd', function () {
 	        return tjs.refreshTokenAsync("faketoken").then(function (result) {
-	            assert.equal(result.response.statusCode, 200);
+	            assert.equal(result.response.status, 200);
 	        });
 	    });
 	});
@@ -248,7 +248,7 @@ describe('TeslaJS', function () {
 	describe('#logout()', function () {
 	    it('should succeed', function (done) {
 	        tjs.logout("token", function (err, result) {
-				if (result.response.statusCode == 200) {
+				if (result.response.status == 200) {
 					done();
 				} else {
 					done(err);
@@ -265,7 +265,7 @@ describe('TeslaJS', function () {
 	describe('#logoutAsync()', function () {
 	    it('should succeed', function () {
 	        return tjs.logoutAsync("token").then(function (result) {
-				assert(result.response.statusCode, 200);
+				assert(result.response.status, 200);
 			});
 	    });
 	});
